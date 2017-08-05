@@ -1,6 +1,7 @@
 # PublishSubjectDemo
 RxJava &amp; RxBinding send user click event
 
+4 examples:
 
     private void rxview_click() {
         RxView.clicks(textView).subscribe(new Consumer<Object>() {
