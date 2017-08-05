@@ -1,25 +1,24 @@
 package com.maxproj.publishsubjectdemo;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import com.jakewharton.rxbinding2.view.RxView;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.FlowableEmitter;
+import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Cancellable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
@@ -37,22 +36,67 @@ public class MainActivity extends AppCompatActivity {
 
 //        observable_just();
 //        publish_subject();
+//        flowable_emitter();
+//        observable_emitter();
+//        rxview_click();
 
+    }
 
-        Observable<Integer> o = Observable.fromCallable(new Callable<Integer>() {
+    private void rxview_click() {
+        RxView.clicks(textView).subscribe(new Consumer<Object>() {
             @Override
-            public Integer call() throws Exception {
-                return null;
+            public void accept(Object o) {
+                append_str(" " + ((int) (Math.random() * 10)));
             }
         });
+    }
 
-//        Observable<Integer> observable = Observable.fromPublisher(new Publisher<Integer>() {
-//            @Override
-//            public void subscribe(Subscriber<? super Integer> s) {
-//
-//            }
-//        });
+    private void observable_emitter() {
+        Observable.create(new ObservableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(@NonNull final ObservableEmitter<Integer> e) throws Exception {
 
+                e.setCancellable(new Cancellable() {
+                    //when emitter send cancel, textview remove listener?
+                    @Override
+                    public void cancel() throws Exception {
+                        textView.setOnClickListener(null);
+                    }
+                });
+
+                textView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        e.onNext((int) (Math.random() * 10));
+                    }
+                });
+            }
+        }).subscribe(new Consumer<Integer>() {
+            @Override
+            public void accept(@NonNull Integer integer) throws Exception {
+                append_str(" " + integer);
+            }
+        });
+    }
+
+    private void flowable_emitter() {
+        Flowable.create(new FlowableOnSubscribe<Integer>() {
+            @Override
+            public void subscribe(@NonNull final FlowableEmitter<Integer> e) throws Exception {
+                textView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        e.onNext((int) (Math.random() * 10));
+                    }
+                });
+            }
+        }, BackpressureStrategy.MISSING).subscribe(new Consumer<Integer>() {
+            @Override
+            public void accept(@NonNull Integer integer) throws Exception {
+
+                append_str(" " + integer);
+            }
+        });
     }
 
     private void publish_subject() {
@@ -64,10 +108,11 @@ public class MainActivity extends AppCompatActivity {
                 append_str(" " + integer);
             }
         });
+
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                publishSubject.onNext((int)(Math.random()*10));
+                publishSubject.onNext((int) (Math.random() * 10));
             }
         });
     }
